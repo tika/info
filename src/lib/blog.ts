@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { marked } from "marked";
 
 export interface BlogPost {
 	slug: string;
@@ -10,8 +10,8 @@ export interface BlogPost {
 }
 
 // GitHub API configuration
-const GITHUB_API_BASE = 'https://api.github.com/repos/tika/thoughts/contents/posts';
-const GITHUB_API_KEY = import.meta.env.VITE_GITHUB_API_KEY; // Make sure to set this in your .env file
+const GITHUB_API_BASE =
+	"https://api.github.com/repos/tika/thoughts/contents/posts";
 
 /**
  * Fetches all blog posts from the GitHub repository
@@ -21,36 +21,40 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 		// Fetch the list of files from the "posts" directory
 		const response = await fetch(GITHUB_API_BASE, {
 			headers: {
-				Authorization: `token ${GITHUB_API_KEY}`,
-				Accept: 'application/vnd.github.v3+json'
-			}
+				Accept: "application/vnd.github.v3+json",
+			},
 		});
 
 		if (!response.ok) {
 			// Provide more detailed error logging
 			const errorBody = await response.text();
-			throw new Error(`Failed to fetch posts: ${response.statusText} - ${errorBody}`);
+			throw new Error(
+				`Failed to fetch posts: ${response.statusText} - ${errorBody}`,
+			);
 		}
 
 		const files = await response.json();
 
 		// Filter only markdown files
-		const mdFiles = files.filter((file: any) => file.name.endsWith('.md') && file.type === 'file');
+		const mdFiles = files.filter(
+			(file: any) => file.name.endsWith(".md") && file.type === "file",
+		);
 
 		// Fetch and parse each markdown file
 		const posts = await Promise.all(
 			mdFiles.map(async (file: any) => {
 				const content = await fetchPostContent(file.download_url);
 				return content;
-			})
+			}),
 		);
 
 		// Sort posts by date (newest first)
 		return posts.sort(
-			(a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+			(a, b) =>
+				new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime(),
 		);
 	} catch (error) {
-		console.error('Error fetching blog posts:', error);
+		console.error("Error fetching blog posts:", error);
 		return [];
 	}
 }
@@ -87,22 +91,22 @@ async function fetchPostContent(url: string): Promise<BlogPost> {
 
 	if (frontmatterMatch) {
 		const frontmatterContent = frontmatterMatch[1];
-		frontmatterContent.split('\n').forEach((line) => {
-			const [key, value] = line.split(':').map((part) => part.trim());
+		frontmatterContent.split("\n").forEach((line) => {
+			const [key, value] = line.split(":").map((part) => part.trim());
 			if (key && value) {
-				frontmatter[key] = value.replace(/^['"]|['"]$/g, '');
+				frontmatter[key] = value.replace(/^['"]|['"]$/g, "");
 			}
 		});
 	}
 
 	// Remove frontmatter from content
-	const content = markdown.replace(/^---\n.*?\n---\n/s, '').trim();
+	const content = markdown.replace(/^---\n.*?\n---\n/s, "").trim();
 
 	// Generate slug from title
 	const slug = frontmatter.title
 		.toLowerCase()
-		.replace(/[^\w\s]/g, '')
-		.replace(/\s+/g, '-');
+		.replace(/[^\w\s]/g, "")
+		.replace(/\s+/g, "-");
 
 	// Convert markdown to HTML
 	const html = marked.parse(content, { async: false }) as string;
@@ -113,6 +117,6 @@ async function fetchPostContent(url: string): Promise<BlogPost> {
 		category: frontmatter.category,
 		entry_date: frontmatter.entry_date,
 		content,
-		html
+		html,
 	};
 }
